@@ -15,7 +15,6 @@ setlocal foldmethod=indent
 setlocal formatoptions-=t formatoptions+=croql
 setlocal include=^\\s*\\(from\\|import\\|include\\)
 setlocal suffixesadd=.nim
-setlocal keywordprg=:NimDocOf
 setlocal iskeyword=a-z,A-Z,48-57,_
 
 " required by the compiler
@@ -96,20 +95,7 @@ function! s:nimStar(word, backwards)
   endif
 endfunction
 
-" commands
-" find references to symbol on cursor
-command! -buffer NimReferences call nim#suggest#use#ShowReferences()
-" display the type of symbol on cursor
-command! -buffer NimTypeOf call nim#suggest#def#ShowType()
-" display the documentation of symbol on cursor, arguments are ignored, only
-" used for keywordprg support
-command! -nargs=* -buffer NimDocOf call nim#suggest#def#ShowDoc()
-
 " scripted mappings
-noremap <script> <buffer> <silent> <Plug>NimGoToDefBuf :call nim#suggest#def#GoTo('b')<lf>
-noremap <script> <buffer> <silent> <Plug>NimGoToDefSplit :call nim#suggest#def#GoTo('s')<lf>
-noremap <script> <buffer> <silent> <Plug>NimGoToDefVSplit :call nim#suggest#def#GoTo('v')<lf>
-noremap <script> <buffer> <silent> <Plug>NimOutline :call nim#suggest#outline#OpenLocList()<lf>
 " these have to be implemented like this due to function-search-undo
 noremap <script> <buffer> <silent> <Plug>NimStar :execute <SID>nimStar(v:true, v:true)<lf>
 noremap <script> <buffer> <silent> <Plug>NimGStar :execute <SID>nimStar(v:false, v:true)<lf>
@@ -117,15 +103,6 @@ noremap <script> <buffer> <silent> <Plug>NimPound :execute <SID>nimStar(v:true, 
 noremap <script> <buffer> <silent> <Plug>NimGPound :execute <SID>nimStar(v:false, v:false)<lf>
 
 if !exists('no_plugin_maps') && !exists('no_nim_maps')
-  if !hasmapto('<Plug>NimGoToDefBuf')
-    nmap <buffer> gd <Plug>NimGoToDefBuf
-  endif
-  if !hasmapto('<Plug>NimGoToDefSplit')
-    nmap <buffer> gD <Plug>NimGoToDefSplit
-  endif
-  if !hasmapto('<Plug>NimOutline')
-    nmap <buffer> gO <Plug>NimOutline
-  endif
   if !hasmapto('<Plug>NimStar')
     nmap <buffer> * <Plug>NimStar
   endif
@@ -139,27 +116,3 @@ if !exists('no_plugin_maps') && !exists('no_nim_maps')
     nmap <buffer> g* <Plug>NimGPound
   endif
 endif
-
-function s:updateSemanticHighlight() abort
-  if (!exists('SessionLoad') || !SessionLoad) &&
-    \ !empty(nim#suggest#ProjectFindOrStart())
-    if get(b:, 'nim_last_changed', -1) != b:changedtick
-      call nim#suggest#highlight#HighlightBuffer()
-      let b:nim_last_changed = b:changedtick
-    endif
-  endif
-endfunction
-
-augroup NimSemanticHighlight
-  autocmd!
-  autocmd BufNewFile,BufWinEnter,BufWritePost *.nim
-  \ call s:updateSemanticHighlight()
-
-  if get(g:, 'nim_highlight_wait', v:false)
-    autocmd CursorHold,CursorHoldI,InsertEnter,InsertLeave *.nim
-    \ call s:updateSemanticHighlight()
-  else
-    autocmd TextChanged,TextChangedI,TextChangedP *.nim
-    \ call s:updateSemanticHighlight()
-  endif
-augroup END
